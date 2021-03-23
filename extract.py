@@ -79,8 +79,11 @@ def get_section(pdf: pdftotext.PDF, section_pages: tuple):
 def is_footer(line: str):
     return re.match(r'Formula Student Rules 2020 +Version: (\d+\.?)* +\d+ of \d+', line)
 
-def is_header(line: str): # todo - change this to a header pattern
-    return re.match(r'Formula Student Rules 2020 +', line)
+def is_header(line: str):
+    return re.match(r'Formula Student Rules 2020 ?', line)
+
+def is_table(line: str):
+    return True
 class RuleLayer(IntEnum):
     CATEGORY = 0   # e.g. A       - Administrative Regulations
     SECTION = 1    # e.g. A 1     - Competition Overview
@@ -88,10 +91,8 @@ class RuleLayer(IntEnum):
     RULE = 3       # e.g. A 1.1.1 - RULE
 
 # todo - parse_rules(), parse_abbreviations()... etc
-def parse_rules_page(page, rules):
+def parse_rules_page(page, rules, section_index, subsection_index, rule_index):
         
-    section_index, subsection_index, rule_index = [0, 0, 0]
-
     for line in page:
         
         if is_header(line): # skip headers
@@ -99,6 +100,9 @@ def parse_rules_page(page, rules):
         
         if is_footer(line): # skip footers
             continue
+        
+        # if is_table(line): # todo - skip tables
+            # continue
         
         # todo - handle tables, table captions, figures, figure captions, ... etc
 
@@ -111,8 +115,13 @@ def parse_rules_page(page, rules):
         if section_match:
             category, section_index, section_title = section_match.groups()
             
+            section_index = int(section_index)
+            
             # initialize new section:
-            rules[category]['sections'][int(section_index)] = {'title': section_title, 'subsections': {}} 
+            if section_index in rules[category]['sections'].keys():
+                continue # skip section headers
+            else:
+                rules[category]['sections'][section_index] = {'title': section_title, 'subsections': {}} 
         
         elif subsection_match:
             category, index, subsection_title = subsection_match.groups()
@@ -128,14 +137,15 @@ def parse_rules_page(page, rules):
             section_index, subsection_index, rule_index = [int(v) for v in index.split('.')]
             
              # initialize new rule:
+            # if rule_index not in rules[category]['sections'][section_index]['subsections'].keys():
             rules[category]['sections'][section_index]['subsections'][subsection_index]['rules'][rule_index] = rule_text
                                 
         else: # todo - when rule overflows into other page, append this line to current rule
-            pass
+            print(line)
             # rules[category][section_index][subsection_index][rule_index] += line
                 
     
-    return rules
+    return rules, section_index, subsection_index, rule_index
 
 def parse_rules(pages, category_labels=['A', 'T', 'CV', 'EV', 'DV', 'IN', 'S', 'D']):
     '''
@@ -145,10 +155,12 @@ def parse_rules(pages, category_labels=['A', 'T', 'CV', 'EV', 'DV', 'IN', 'S', '
     for label in category_labels: # todo - do this within the parse_rules_page
         rules[label] = {'sections': {}} # initialize categories in rules dict
     
-    page = pages[0] # todo - repeat for all pages
-    rules = parse_rules_page(page, rules) # update rules with page
+    # page = pages[0] # todo - repeat for all pages
+    # rules = parse_rules_page(page, rules) # update rules with page
     
-    # for page in pages:
-        # rules = parse_rules_page(page, rules)
+    section_index, subsection_index, rule_index = [0, 0, 0]
+    
+    for page in pages:
+        rules, section_index, subsection_index, rule_index = parse_rules_page(page, rules, section_index, subsection_index, rule_index)
     
     return rules
