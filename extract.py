@@ -112,7 +112,7 @@ def parse_rules_page(page, rules):
             category, section_index, section_title = section_match.groups()
             
             # initialize new section:
-            rules[category][int(section_index)] = {'title': section_title, 'subsections': {}} 
+            rules[category]['sections'][int(section_index)] = {'title': section_title, 'subsections': {}} 
         
         elif subsection_match:
             category, index, subsection_title = subsection_match.groups()
@@ -120,7 +120,7 @@ def parse_rules_page(page, rules):
             section_index, subsection_index = [int(v) for v in index.split('.')]
             
             # initialize new subsection:
-            rules[category][section_index][subsection_index] = {'title': subsection_title, 'rules': {}} 
+            rules[category]['sections'][section_index]['subsections'][subsection_index] = {'title': subsection_title, 'rules': {}} 
             
         elif rule_match:
             category, index, rule_text = rule_match.groups()
@@ -128,7 +128,7 @@ def parse_rules_page(page, rules):
             section_index, subsection_index, rule_index = [int(v) for v in index.split('.')]
             
              # initialize new rule:
-            rules[category][section_index][subsection_index][rule_index] = rule_text
+            rules[category]['sections'][section_index]['subsections'][subsection_index]['rules'][rule_index] = rule_text
                                 
         else: # todo - when rule overflows into other page, append this line to current rule
             pass
@@ -143,7 +143,7 @@ def parse_rules(pages, category_labels=['A', 'T', 'CV', 'EV', 'DV', 'IN', 'S', '
     '''       
     rules = {}
     for label in category_labels: # todo - do this within the parse_rules_page
-        rules[label] = {} # initialize categories in rules dict
+        rules[label] = {'sections': {}} # initialize categories in rules dict
     
     page = pages[0] # todo - repeat for all pages
     rules = parse_rules_page(page, rules) # update rules with page
