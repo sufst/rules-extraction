@@ -154,25 +154,16 @@ def parse_rules(pages, category_labels=['A', 'T', 'CV', 'EV', 'DV', 'IN', 'S', '
     
     return rules
 
-def parse(file_path):
-    pdf = load_pdf(file_path)
-    
-    section_pages = { # todo - generate automatically
-        # this will eventually be auto-generated from 
-        # the file itself but it's done manually for now
+
+pdf = load_pdf('rules.pdf')
+
+section_pages = { 
+        # todo - generate automatically from pdf
         'contents': (0, 2),
         'changelog': (2, 5),
         'abbreviations': (5, 7),
         'rules': (7, len(pdf))
-    }
-    
-    rules = get_section(pdf, section_pages['rules'])
-    parsed = parse_rules(rules)
-    
-    return parsed
-    
-    # for section_page_range in section_pages:
-        # parse_section(pdf, section_page_range)
+}
 
-parsed = parse('rules.pdf')
-print(parsed)
+rules = get_section(pdf, section_pages['rules'])
+parsed_rules = parse_rules(rules)
