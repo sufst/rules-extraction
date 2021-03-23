@@ -141,29 +141,14 @@ def parse_rules(pages, category_labels=['A', 'T', 'CV', 'EV', 'DV', 'IN', 'S', '
     '''
     todo
     '''       
-    page = pages[0] # todo - repeat for all pages
-    
     rules = {}
     for label in category_labels: # todo - do this within the parse_rules_page
         rules[label] = {} # initialize categories in rules dict
     
+    page = pages[0] # todo - repeat for all pages
     rules = parse_rules_page(page, rules) # update rules with page
     
     # for page in pages:
         # rules = parse_rules_page(page, rules)
     
     return rules
-
-
-pdf = load_pdf('rules.pdf')
-
-section_pages = { 
-        # todo - generate automatically from pdf
-        'contents': (0, 2),
-        'changelog': (2, 5),
-        'abbreviations': (5, 7),
-        'rules': (7, len(pdf))
-}
-
-rules = get_section(pdf, section_pages['rules'])
-parsed_rules = parse_rules(rules)
