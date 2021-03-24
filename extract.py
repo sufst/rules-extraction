@@ -100,6 +100,8 @@ def parse_rules(pages, category_labels=['A', 'T', 'CV', 'EV', 'DV', 'IN', 'S', '
     for label in category_labels:
         rules[label] = {'sections': {}} # initialize categories in rules dict
         
+    rules['figures'] = {}
+        
     section_index, subsection_index, rule_index = [0, 0, 0]
     previous_layer = RuleLayer.CATEGORY
     
@@ -157,9 +159,17 @@ def parse_rules(pages, category_labels=['A', 'T', 'CV', 'EV', 'DV', 'IN', 'S', '
                 
                 # todo - skip if entirely capital letters
                 
-                # todo - handle tables and figures
+                # todo - handle tables
                 
-                if previous_layer == RuleLayer.SUBSECTION:
+                figure_caption_match = re.match(r'^ *Figure *(\d+): *(.*)$', line)
+                if figure_caption_match:
+                    # todo - handle overflowing figure captions (is this necessary?)
+                    figure_index, figure_caption = figure_caption_match.groups()
+                    figure_index = int(figure_index)
+                    
+                    rules['figures'][figure_index] = figure_caption
+                
+                elif previous_layer == RuleLayer.SUBSECTION:
                     rules[category]['sections'][section_index]['subsections'][subsection_index]['notes'] += ' ' + line.strip()
                 elif previous_layer == RuleLayer.RULE:
                     rules[category]['sections'][section_index]['subsections'][subsection_index]['rules'][rule_index] += ' ' + line.strip()
