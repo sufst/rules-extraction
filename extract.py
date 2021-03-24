@@ -160,9 +160,9 @@ def parse_rules(pages, category_labels=['A', 'T', 'CV', 'EV', 'DV', 'IN', 'S', '
                 # todo - handle tables and figures
                 
                 if previous_layer == RuleLayer.SUBSECTION:
-                    rules[category]['sections'][section_index]['subsections'][subsection_index]['notes'] += line.strip()
+                    rules[category]['sections'][section_index]['subsections'][subsection_index]['notes'] += ' ' + line.strip()
                 elif previous_layer == RuleLayer.RULE:
-                    rules[category]['sections'][section_index]['subsections'][subsection_index]['rules'][rule_index] += line.strip()
+                    rules[category]['sections'][section_index]['subsections'][subsection_index]['rules'][rule_index] += ' ' + line.strip()
                 else:
                     print(line)
     return rules
