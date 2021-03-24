@@ -82,39 +82,35 @@ def is_footer(line: str):
 def is_header(line: str):
     return re.match(r'Formula Student Rules 2020 ?', line)
 
-def is_table(line: str):
-    return True
+def is_table(line: str): # todo
+    return False
 class RuleLayer(IntEnum):
     CATEGORY = 0   # e.g. A       - Administrative Regulations
     SECTION = 1    # e.g. A 1     - Competition Overview
     SUBSECTION = 2 # e.g. A 1.1   - Competition Objective
     RULE = 3       # e.g. A 1.1.1 - RULE
 
-# todo - parse_rules(), parse_abbreviations()... etc
+# todo - parse_abbreviations()... etc
+
 def parse_rules(pages, category_labels=['A', 'T', 'CV', 'EV', 'DV', 'IN', 'S', 'D']):
     '''
     todo
     '''       
     rules = {}
-    for label in category_labels: # todo - do this within the parse_rules_page
+    for label in category_labels:
         rules[label] = {'sections': {}} # initialize categories in rules dict
-    
-    # page = pages[0] # todo - repeat for all pages
-    # rules = parse_rules_page(page, rules) # update rules with page
-    
+        
     section_index, subsection_index, rule_index = [0, 0, 0]
+    previous_layer = RuleLayer.CATEGORY
     
     for page in pages:
-        for line in page:
+        for line_index, line in enumerate(page):
             
-            if is_header(line): # skip headers
+            if is_header(line) or line_index == 0: # skip headers (first line)
                 continue
             
             if is_footer(line): # skip footers
                 continue
-            
-            # if is_table(line): # todo - skip tables
-                # continue
             
             # todo - handle tables, table captions, figures, figure captions, ... etc
 
@@ -131,9 +127,11 @@ def parse_rules(pages, category_labels=['A', 'T', 'CV', 'EV', 'DV', 'IN', 'S', '
                 
                 # initialize new section:
                 if section_index in rules[category]['sections'].keys():
-                    continue # skip section headers
+                    continue # skip repeated section titles
                 else:
                     rules[category]['sections'][section_index] = {'title': section_title, 'subsections': {}} 
+                    
+                previous_layer = RuleLayer.SECTION
             
             elif subsection_match:
                 category, index, subsection_title = subsection_match.groups()
@@ -141,7 +139,9 @@ def parse_rules(pages, category_labels=['A', 'T', 'CV', 'EV', 'DV', 'IN', 'S', '
                 section_index, subsection_index = [int(v) for v in index.split('.')]
                 
                 # initialize new subsection:
-                rules[category]['sections'][section_index]['subsections'][subsection_index] = {'title': subsection_title, 'rules': {}} 
+                rules[category]['sections'][section_index]['subsections'][subsection_index] = {'title': subsection_title, 'rules': {}, 'notes': ''} 
+                
+                previous_layer = RuleLayer.SUBSECTION
                 
             elif rule_match:
                 category, index, rule_text = rule_match.groups()
@@ -149,12 +149,20 @@ def parse_rules(pages, category_labels=['A', 'T', 'CV', 'EV', 'DV', 'IN', 'S', '
                 section_index, subsection_index, rule_index = [int(v) for v in index.split('.')]
                 
                 # initialize new rule:
-                # if rule_index not in rules[category]['sections'][section_index]['subsections'].keys():
                 rules[category]['sections'][section_index]['subsections'][subsection_index]['rules'][rule_index] = rule_text
+                
+                previous_layer = RuleLayer.RULE
                                     
-            else: # todo - when rule overflows into other page, append this line to current rule
-                # print(line)
-                pass
-                # rules[category][section_index][subsection_index][rule_index] += line
-    
+            else:
+                
+                # todo - skip if entirely capital letters
+                
+                # todo - handle tables and figures
+                
+                if previous_layer == RuleLayer.SUBSECTION:
+                    rules[category]['sections'][section_index]['subsections'][subsection_index]['notes'] += line.strip()
+                elif previous_layer == RuleLayer.RULE:
+                    rules[category]['sections'][section_index]['subsections'][subsection_index]['rules'][rule_index] += line.strip()
+                else:
+                    print(line)
     return rules
