@@ -91,62 +91,6 @@ class RuleLayer(IntEnum):
     RULE = 3       # e.g. A 1.1.1 - RULE
 
 # todo - parse_rules(), parse_abbreviations()... etc
-def parse_rules_page(page, rules, section_index, subsection_index, rule_index):
-        
-    for line in page:
-        
-        if is_header(line): # skip headers
-            continue
-        
-        if is_footer(line): # skip footers
-            continue
-        
-        # if is_table(line): # todo - skip tables
-            # continue
-        
-        # todo - handle tables, table captions, figures, figure captions, ... etc
-
-        # Match section, subsection, or rule
-        section_match = re.match(r'^(A|T|[CED]V|IN|S|D) ?(\d+) +(.+)', line)
-        subsection_match = re.match(r'^(A|T|[CED]V|IN|S|D) ?(\d+\.\d+) +(.+)', line)
-        rule_match = re.match(r'^(A|T|[CED]V|IN|S|D) ?(\d+\.\d+\.\d+) +(.+)', line)
-        # all_match = re.match(r'^(A|T|[CED]V|IN|S|D) +(?:(\d+\.?)*)', line) # matches all three
-                
-        if section_match:
-            category, section_index, section_title = section_match.groups()
-            
-            section_index = int(section_index)
-            
-            # initialize new section:
-            if section_index in rules[category]['sections'].keys():
-                continue # skip section headers
-            else:
-                rules[category]['sections'][section_index] = {'title': section_title, 'subsections': {}} 
-        
-        elif subsection_match:
-            category, index, subsection_title = subsection_match.groups()
-            
-            section_index, subsection_index = [int(v) for v in index.split('.')]
-            
-            # initialize new subsection:
-            rules[category]['sections'][section_index]['subsections'][subsection_index] = {'title': subsection_title, 'rules': {}} 
-            
-        elif rule_match:
-            category, index, rule_text = rule_match.groups()
-            
-            section_index, subsection_index, rule_index = [int(v) for v in index.split('.')]
-            
-             # initialize new rule:
-            # if rule_index not in rules[category]['sections'][section_index]['subsections'].keys():
-            rules[category]['sections'][section_index]['subsections'][subsection_index]['rules'][rule_index] = rule_text
-                                
-        else: # todo - when rule overflows into other page, append this line to current rule
-            print(line)
-            # rules[category][section_index][subsection_index][rule_index] += line
-                
-    
-    return rules, section_index, subsection_index, rule_index
-
 def parse_rules(pages, category_labels=['A', 'T', 'CV', 'EV', 'DV', 'IN', 'S', 'D']):
     '''
     todo
@@ -161,6 +105,56 @@ def parse_rules(pages, category_labels=['A', 'T', 'CV', 'EV', 'DV', 'IN', 'S', '
     section_index, subsection_index, rule_index = [0, 0, 0]
     
     for page in pages:
-        rules, section_index, subsection_index, rule_index = parse_rules_page(page, rules, section_index, subsection_index, rule_index)
+        for line in page:
+            
+            if is_header(line): # skip headers
+                continue
+            
+            if is_footer(line): # skip footers
+                continue
+            
+            # if is_table(line): # todo - skip tables
+                # continue
+            
+            # todo - handle tables, table captions, figures, figure captions, ... etc
+
+            # Match section, subsection, or rule
+            section_match = re.match(r'^(A|T|[CED]V|IN|S|D) ?(\d+) +(.+)', line)
+            subsection_match = re.match(r'^(A|T|[CED]V|IN|S|D) ?(\d+\.\d+) +(.+)', line)
+            rule_match = re.match(r'^(A|T|[CED]V|IN|S|D) ?(\d+\.\d+\.\d+) +(.+)', line)
+            # all_match = re.match(r'^(A|T|[CED]V|IN|S|D) +(?:(\d+\.?)*)', line) # matches all three
+                    
+            if section_match:
+                category, section_index, section_title = section_match.groups()
+                
+                section_index = int(section_index)
+                
+                # initialize new section:
+                if section_index in rules[category]['sections'].keys():
+                    continue # skip section headers
+                else:
+                    rules[category]['sections'][section_index] = {'title': section_title, 'subsections': {}} 
+            
+            elif subsection_match:
+                category, index, subsection_title = subsection_match.groups()
+                
+                section_index, subsection_index = [int(v) for v in index.split('.')]
+                
+                # initialize new subsection:
+                rules[category]['sections'][section_index]['subsections'][subsection_index] = {'title': subsection_title, 'rules': {}} 
+                
+            elif rule_match:
+                category, index, rule_text = rule_match.groups()
+                
+                section_index, subsection_index, rule_index = [int(v) for v in index.split('.')]
+                
+                # initialize new rule:
+                # if rule_index not in rules[category]['sections'][section_index]['subsections'].keys():
+                rules[category]['sections'][section_index]['subsections'][subsection_index]['rules'][rule_index] = rule_text
+                                    
+            else: # todo - when rule overflows into other page, append this line to current rule
+                # print(line)
+                pass
+                # rules[category][section_index][subsection_index][rule_index] += line
     
     return rules
