@@ -75,10 +75,10 @@ def get_section(pdf: pdftotext.PDF, section_pages: tuple):
     return pages # return list of pages (as list of their lines) for requested section
 
 def is_footer(line: str):
-    return re.match(r'Formula Student Rules 2020 +Version: (\d+\.?)* +\d+ of \d+', line)
+    return re.match(r' *Formula Student Rules 2020 +Version: (\d+\.?)* +\d+ of \d+', line)
 
 def is_header(line: str):
-    return re.match(r'Formula Student Rules 2020 ?', line)
+    return re.match(r' *Formula Student Rules 2020 ?', line)
 class RuleLayer(IntEnum):
     CATEGORY = 0   # e.g. A       - Administrative Regulations
     SECTION = 1    # e.g. A 1     - Competition Overview
