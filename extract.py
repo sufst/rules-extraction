@@ -117,12 +117,18 @@ def parse_rules(pages, category_labels=['A', 'T', 'CV', 'EV', 'DV', 'IN', 'S', '
             # todo - handle tables, table captions, figures, figure captions, ... etc
 
             # Match section, subsection, or rule
+            category_match = re.match(r'^ +(A|T|[CED]V|IN|S|D) +((?:[A-Z]+ *)+)$', line)
             section_match = re.match(r'^(A|T|[CED]V|IN|S|D) ?(\d+) +(.+)', line)
             subsection_match = re.match(r'^(A|T|[CED]V|IN|S|D) ?(\d+\.\d+) +(.+)', line)
             rule_match = re.match(r'^(A|T|[CED]V|IN|S|D) ?(\d+\.\d+\.\d+) +(.+)', line)
             # all_match = re.match(r'^(A|T|[CED]V|IN|S|D) +(?:(\d+\.?)*)', line) # matches all three
-                    
-            if section_match:
+                
+            if category_match:
+                category, category_title = category_match.groups()   
+                rules[category]['title'] = category_title
+                
+                previous_layer = RuleLayer.CATEGORY
+            elif section_match:
                 category, section_index, section_title = section_match.groups()
                 
                 section_index = int(section_index)
@@ -168,7 +174,8 @@ def parse_rules(pages, category_labels=['A', 'T', 'CV', 'EV', 'DV', 'IN', 'S', '
                     figure_index = int(figure_index)
                     
                     rules['figures'][figure_index] = figure_caption
-                
+                elif previous_layer == RuleLayer.CATEGORY:
+                    rules[category]['title'] += ' ' + line.strip()
                 elif previous_layer == RuleLayer.SECTION:
                     rules[category]['sections'][section_index]['title'] += ' ' + line.strip()
                 elif previous_layer == RuleLayer.SUBSECTION:
