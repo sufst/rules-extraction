@@ -5,31 +5,42 @@ import re
 abbrPage = 6
 startPage = 8
 
-def checkLine(line):
-    outLine = ""
+def checkLine(line, multiLine):
+    # Check line of a rule without a 'heading'
     
-    # Line of a rule without a 'heading'
-    line = line.split()
+    outLine = ""
+    linkStart = ""
 
+    # Link to section
+    line = re.sub(r'(A|T|[CED]V|IN|S|D) +(\d+\.?)+(\d+)', ":ref:`\g<0>`", line)
+    
+    line = line.lstrip().split()
     for word in line:
         alteredLine = False
         
         # Bullet point
         if word == '•':
-            outLine += '\n  -'
+            outLine += '\n\n-'
             alteredLine = True
             continue
 
         # Abbreviations
         for key in abbrs:
-            keySearch = re.search(key, word)
+            keySearch = re.match(key, word)
             if keySearch:
-                outLine += ' {abbr}`' + word + ' (' + abbrs[keySearch.group()] + ')`'
+                if len(outLine) > 0 or multiLine:
+                    outLine += ' '
+                
+                outLine += ':abbr:`' + word + ' (' + abbrs[keySearch.group()] + ')`'
                 alteredLine = True
                 break
 
         if not alteredLine:
-            outLine += ' ' + word
+            #or (line.index(word) == 0 and len(outLine) > 0)
+            if len(outLine) > 0 or multiLine:
+              outLine += ' '
+              
+            outLine += word
 
     return outLine
 
@@ -49,8 +60,9 @@ with open("rules.pdf", "rb") as f:
         abbrText += pdf[i]
 
     for i in range(startPage - 1, len(pdf)):
-        pdfText += pdf[i]
-
+        # print(pdf[i].index("\n"))
+        pdfText += pdf[i][pdf[i].index("\n"):]
+    
     # Abbreviations parsing
     abbrs = {}
     
@@ -83,53 +95,72 @@ with open("rules.pdf", "rb") as f:
         if footerMatch:
             continue
 
-        headingUnderlines = ['=', '-']
+        line = re.sub(r'\s{1}\]', "]", line)
+            
+        headingUnderlines = ['=', '-', '^']
 
         # Match heading
-        mo = re.match(r'^(A|T|[CED]V|IN|S|D) +(\d+\.?)*', line)
+        mo = re.match(r'^(A|T|[CED]V|IN|S|D) *(\d+\.?)*', line)
 
         if mo:
             headingLevel = len(mo.group().split('.'))
 
-            # Determine between top of page heading and level 1 headings
-            if headingLevel == 1:
-                if line != currentLevelOne:
-                    currentLevelOne = line;
-                else:
-                    continue
+            # Level 1 heading
+            h1Match = re.match(r'^(A|T|[CED]V|IN|S|D)\d{1,2} +[A-Z-()&[\] ]*', line)
+            if h1Match:
+                if not headingPrintRule:
+                    print(ruleText + "\n") # Print rule text
+                    headingPrintRule = True
                 
-            # If we have a heading not a rule
-            if headingLevel < 3:
-                print('  ' + ruleText + "\n") # Print rule text
-                headingPrintRule = True
-                ruleText = ""
+                headingText = re.sub(r'\s{2,}', " ", h1Match.group())
+                headingText = re.sub(r'(\b.) ', '\g<1>', headingText)
                 
-                headingText = line[mo.end():].strip()
+                headingText = headingText[mo.end():].strip()
 
                 heading = mo.group() + ' - ' + headingText;
 
                 # Add 3 for dash
                 underlineLength = len(headingText) + len(mo.group()) + 3
-                underlines = headingUnderlines[headingLevel-1]*underlineLength
+                underlines = headingUnderlines[headingLevel-1]*underlineLength + "\n"
 
-                print("\n")
                 print(heading)
                 print(underlines)
 
+            if headingLevel == 2:
+                if not headingPrintRule:
+                    print(ruleText + "\n") # Print rule text
+                    headingPrintRule = True
+                    ruleText = ""
+                
+                headingText = line[mo.end():].strip()
+                headingText = re.sub(r'\s{2,}', " ", headingText)
+
+                heading = mo.group() + ' - ' + headingText;
+
+                # Add 3 for dash
+                underlineLength = len(headingText) + len(mo.group()) + 3
+                underlines = headingUnderlines[headingLevel-1]*underlineLength + "\n"
+
+                print(heading)
+                print(underlines)
+                
             # If we have a rule
             if headingLevel == 3:
                 if not headingPrintRule:
-                    print(' ' + ruleText + "\n") # Print prev rule text
+                    print(ruleText + "\n") # Print prev rule text
                     
                 ruleGroup = mo.group()
-                # ruleText = line[mo.end():].strip()
+                ruleText = checkLine(line[mo.end():].strip(), False)
 
-                ruleText = checkLine(line[mo.end():].strip())
+                # Add 3 for dash
+                underlineLength = len(ruleGroup)
+                underlines = headingUnderlines[headingLevel-1]*underlineLength + "\n"
 
                 print(ruleGroup)
+                print(underlines)
                 headingPrintRule = False
 
         else:
-            ruleText += checkLine(line)
+            ruleText += checkLine(line, True)
         
-    print(' ' + ruleText + "\n") # Print final rule
+    print(ruleText + "\n") # Print final rule
