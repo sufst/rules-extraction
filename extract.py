@@ -98,7 +98,7 @@ def parse_rules(pages, category_labels=['A', 'T', 'CV', 'EV', 'DV', 'IN', 'S', '
     '''       
     rules = {}
     for label in category_labels:
-        rules[label] = {'sections': {}} # initialize categories in rules dict
+        rules[label] = {'title': '', 'sections': {}} # initialize categories in rules dict
         
     rules['figures'] = {}
         
@@ -169,6 +169,8 @@ def parse_rules(pages, category_labels=['A', 'T', 'CV', 'EV', 'DV', 'IN', 'S', '
                     
                     rules['figures'][figure_index] = figure_caption
                 
+                elif previous_layer == RuleLayer.SECTION:
+                    rules[category]['sections'][section_index]['title'] += ' ' + line.strip()
                 elif previous_layer == RuleLayer.SUBSECTION:
                     rules[category]['sections'][section_index]['subsections'][subsection_index]['notes'] += ' ' + line.strip()
                 elif previous_layer == RuleLayer.RULE:
