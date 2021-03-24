@@ -59,11 +59,9 @@ def _old_parse_page(page):
                 print(line)
                     
 def get_page(page):
-    # todo - rename to get_page
     return page.splitlines()
     
 def get_section(pdf: pdftotext.PDF, section_pages: tuple):
-    # todo - rename to get_section
     '''
     pdf: the result of pdftotext.PDF(PDF_FILE)
     section_pages: page range for section you want to extract, e.g. (0, 5) for pages 0-4
@@ -81,9 +79,6 @@ def is_footer(line: str):
 
 def is_header(line: str):
     return re.match(r'Formula Student Rules 2020 ?', line)
-
-def is_table(line: str): # todo
-    return False
 class RuleLayer(IntEnum):
     CATEGORY = 0   # e.g. A       - Administrative Regulations
     SECTION = 1    # e.g. A 1     - Competition Overview
@@ -108,15 +103,13 @@ def parse_rules(pages, category_labels=['A', 'T', 'CV', 'EV', 'DV', 'IN', 'S', '
     for page in pages:
         for line_index, line in enumerate(page):
             
-            if is_header(line) or line_index == 0: # skip headers (first line)
+            if is_header(line) or line_index == 0: # skip headers (or first line)
                 continue
             
             if is_footer(line): # skip footers
                 continue
             
-            # todo - handle tables, table captions, figures, figure captions, ... etc
-
-            # Match section, subsection, or rule
+            # Match category, section, subsection, or rule
             category_match = re.match(r'^ +(A|T|[CED]V|IN|S|D) +((?:[A-Z]+ *)+)$', line)
             section_match = re.match(r'^(A|T|[CED]V|IN|S|D) ?(\d+) +(.+)', line)
             subsection_match = re.match(r'^(A|T|[CED]V|IN|S|D) ?(\d+\.\d+) +(.+)', line)
@@ -162,25 +155,23 @@ def parse_rules(pages, category_labels=['A', 'T', 'CV', 'EV', 'DV', 'IN', 'S', '
                 previous_layer = RuleLayer.RULE
                                     
             else:
-                
-                # todo - skip if entirely capital letters
-                
-                # todo - handle tables
+                                
+                # todo - handle tables, table captions
                 
                 figure_caption_match = re.match(r'^ *Figure *(\d+): *(.*)$', line)
                 if figure_caption_match:
-                    # todo - handle overflowing figure captions (is this necessary?)
+                    # should this handle overflowing figure captions?
                     figure_index, figure_caption = figure_caption_match.groups()
                     figure_index = int(figure_index)
                     
                     rules['figures'][figure_index] = figure_caption
-                elif previous_layer == RuleLayer.CATEGORY:
+                elif previous_layer == RuleLayer.CATEGORY: # overflow category title
                     rules[category]['title'] += ' ' + line.strip()
-                elif previous_layer == RuleLayer.SECTION:
+                elif previous_layer == RuleLayer.SECTION:  # overflow section title
                     rules[category]['sections'][section_index]['title'] += ' ' + line.strip()
-                elif previous_layer == RuleLayer.SUBSECTION:
+                elif previous_layer == RuleLayer.SUBSECTION: # overflow subsection title
                     rules[category]['sections'][section_index]['subsections'][subsection_index]['notes'] += ' ' + line.strip()
-                elif previous_layer == RuleLayer.RULE:
+                elif previous_layer == RuleLayer.RULE: # overflow rule
                     rules[category]['sections'][section_index]['subsections'][subsection_index]['rules'][rule_index] += ' ' + line.strip()
                 else:
                     print(line)
