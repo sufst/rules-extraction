@@ -119,11 +119,11 @@ def parse_rules(pages, category_labels=['A', 'T', 'CV', 'EV', 'DV', 'IN', 'S', '
             if category_match:
                 category, category_title = category_match.groups()   
                 rules[category]['title'] = category_title
-                
+                category_title = section_title = re.sub(r'(?:(?<![A-Z]{2})(?<!&))(\s)|(\s)(?=-)|(\s)(?=])', "", category_title)
                 previous_layer = RuleLayer.CATEGORY
             elif section_match:
                 category, section_index, section_title = section_match.groups()
-                
+                section_title = re.sub(r'(?:(?<![A-Z]{2})(?<!&))(\s)|(\s)(?=-)|(\s)(?=])', "", section_title)
                 section_index = int(section_index)
                 
                 # initialize new section:
@@ -136,7 +136,8 @@ def parse_rules(pages, category_labels=['A', 'T', 'CV', 'EV', 'DV', 'IN', 'S', '
             
             elif subsection_match:
                 category, index, subsection_title = subsection_match.groups()
-                
+                subsection_title = re.sub(r'(\s)(?=])', "", subsection_title)
+                subsection_title = re.sub(r'(\s{2,})', " ", subsection_title)
                 section_index, subsection_index = [int(v) for v in index.split('.')]
                 
                 # initialize new subsection:
