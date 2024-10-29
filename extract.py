@@ -84,7 +84,11 @@ with open("rules.pdf", "rb") as f:
 
                 abbrSplit = re.split('\s{2,}', abbr)
 
-                abbrs[abbrSplit[0]] = abbrSplit[1]
+                if len(abbrSplit) >= 2:
+                     abbrs[abbrSplit[0]] = ' '.join(abbrSplit[1:])
+                else:
+            # Log or handle cases where no definition is found
+                    print(f"Could not find definition for abbreviation: {abbrSplit[0]}")
     
     # Main text parsing
     for line in pdfText.splitlines():
