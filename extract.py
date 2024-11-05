@@ -7,17 +7,17 @@ startPage = 8
 
 def checkLine(line, multiLine):
     # Check line of a rule without a 'heading'
-    
+
     outLine = ""
     linkStart = ""
 
     # Link to section
     line = re.sub(r'(A|T|[CED]V|IN|S|D) +(\d+\.?)+(\d+)', ":ref:`\g<0>`", line)
-    
+
     line = line.lstrip().split()
     for word in line:
         alteredLine = False
-        
+
         # Bullet point
         if word == '•':
             outLine += '\n\n-'
@@ -30,7 +30,7 @@ def checkLine(line, multiLine):
             if keySearch:
                 if len(outLine) > 0 or multiLine:
                     outLine += ' '
-                
+
                 outLine += ':abbr:`' + word + ' (' + abbrs[keySearch.group()] + ')`'
                 alteredLine = True
                 break
@@ -39,13 +39,13 @@ def checkLine(line, multiLine):
             #or (line.index(word) == 0 and len(outLine) > 0)
             if len(outLine) > 0 or multiLine:
               outLine += ' '
-              
+
             outLine += word
 
     return outLine
 
 # Load PDF
-with open("rules.pdf", "rb") as f:
+with open("rules-extraction/rules.pdf", "rb") as f:
     abbrText = ""
     pdfText = ""
 
@@ -58,14 +58,14 @@ with open("rules.pdf", "rb") as f:
 
     for i in range(abbrPage - 1, startPage - 1):
         abbrText += pdf[i]
-
+ 
     for i in range(startPage - 1, len(pdf)):
         # print(pdf[i].index("\n"))
         pdfText += pdf[i][pdf[i].index("\n"):]
-    
+
     # Abbreviations parsing
     abbrs = {}
-    
+
     for line in abbrText.splitlines():
         footerMatch = re.match(r'Formula Student Rules 2020 +'
                                 'Version: (\d+\.?)* +'
@@ -84,19 +84,23 @@ with open("rules.pdf", "rb") as f:
 
                 abbrSplit = re.split('\s{2,}', abbr)
 
-                abbrs[abbrSplit[0]] = abbrSplit[1]
+                if len(abbrSplit) >= 2:
+                     abbrs[abbrSplit[0]] = ' '.join(abbrSplit[1:])
+                else:
+            # Log or handle cases where no definition is found
+                    print(f"Could not find definition for abbreviation: {abbrSplit[0]}")
     
     # Main text parsing
     for line in pdfText.splitlines():
         footerMatch = re.match(r'Formula Student Rules 2020 +'
                                'Version: (\d+\.?)* +'
                                '\d+ of \d+', line)
-    
+        
         if footerMatch:
             continue
 
         line = re.sub(r'\s{1}\]', "]", line)
-            
+
         headingUnderlines = ['=', '-', '^']
 
         # Match heading
@@ -114,10 +118,10 @@ with open("rules.pdf", "rb") as f:
                 
                 headingText = re.sub(r'\s{2,}', " ", h1Match.group())
                 headingText = re.sub(r'(\b.) ', '\g<1>', headingText)
-                
+
                 headingText = headingText[mo.end():].strip()
 
-                heading = mo.group() + ' - ' + headingText;
+                heading = mo.group() + ' - ' + headingText
 
                 # Add 3 for dash
                 underlineLength = len(headingText) + len(mo.group()) + 3
@@ -125,7 +129,7 @@ with open("rules.pdf", "rb") as f:
 
                 print(heading)
                 print(underlines)
-
+            
             if headingLevel == 2:
                 if not headingPrintRule:
                     print(ruleText + "\n") # Print rule text
@@ -134,8 +138,8 @@ with open("rules.pdf", "rb") as f:
                 
                 headingText = line[mo.end():].strip()
                 headingText = re.sub(r'\s{2,}', " ", headingText)
-
-                heading = mo.group() + ' - ' + headingText;
+ 
+                heading = mo.group() + ' - ' + headingText
 
                 # Add 3 for dash
                 underlineLength = len(headingText) + len(mo.group()) + 3
@@ -143,7 +147,7 @@ with open("rules.pdf", "rb") as f:
 
                 print(heading)
                 print(underlines)
-                
+            
             # If we have a rule
             if headingLevel == 3:
                 if not headingPrintRule:
@@ -162,5 +166,5 @@ with open("rules.pdf", "rb") as f:
 
         else:
             ruleText += checkLine(line, True)
-        
+
     print(ruleText + "\n") # Print final rule
