@@ -32,7 +32,7 @@ class PDF():
         while len(cleanedPage) < len(pageData):
             PageString = pageData[i]
             for strings in range(i, len(pageData)):
-                #BLANK /SHORT LINE CLEANING
+                #BLANK / SHORT LINE CLEANING
                 if PageString.strip() == "" or len(PageString) < 3:
                     PageString = PageString.strip()
                     continue
@@ -63,12 +63,12 @@ class PDF():
 
 
  
- # PAGE NUMBER IS ONE LESS THAN TRUE PAGE MUMBER DUE TO THE WAY THE MODULE PYPDF2 WORKS
+ # PAGE NUMBER IS ONE LESS THAN TRUE PAGE MUMBER DUE TO THE WAY THE MODULE PYPDF2 WORKS - TBC IF THIS DEPENDS ON FILE!!!!
  # READS FOOTER FROM PAGE BEFORE IT SOMETIMES AS HEADER OF CURRENT PAGE
 
 # CODE ASSUMPTIONS
 # EVERY RULE BEGINS WITH GENERAL FORMAT A-Z 1-50 . (no spaces)
-# EVERY FOOTER HAS © IN IT TO IDENTIFY IT AS A FOOTER TO CLEAN
+# EVERY FOOTER HAS © IN IT TO IDENTIFY IT AS A FOOTER TO CLEAN AND MIGHT CONTAIN 'RULES' AS FINAL WORD
 
 # FILES AND FILE INFO
 # "rules-extraction/fsuk-2024-rules---v1-2.pdf"
