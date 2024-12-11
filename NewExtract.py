@@ -74,6 +74,7 @@ class PDF():
 
     def clean_between_pages(self):
         # have to match start of a page disregarding the header and footer where the first sentence doesnt start with a rule code
+        # for loop through pages which are CLEANED, if page starts with sentence which doesnt match header, title or rule start it joins to page before it
         pass
 
 
