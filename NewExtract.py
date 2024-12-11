@@ -3,7 +3,7 @@ import os
 import re
 
 # General formats for rules, titles and headers FSG and FSUK documentation
-Rule_Start_Regex = r"^[A-Z]{1,2}\d{1,3}\.\d{1,3}\."
+Rule_Start_Regex = r"^[A-Z]{1,2}\d{1,3}\.\d{1,3}"
 Title_Regex = r"^[A-Z]{1,2}\.\d{1,3}"
 Header_Regex = r"^[A-Z]{1,2}\d{1,2}\s"
 # General Formats as of 2025 for footers in FSG and FSUK documentation
@@ -47,7 +47,7 @@ class PDF():
         while len(cleanedPage) < len(pageData):
             PageString = pageData[i]
             for strings in range(i, len(pageData)):
-                #FOOTER CLEANING - Checks each word in potential footer text and uses regexes to check'
+                # FOOTER CLEANING - Checks each word in potential footer text and uses regexes to check'
                 if re.search(Footer_Regexes, PageString):
                     PageString = ""
                     break
@@ -103,5 +103,3 @@ print(obj.pagesDict[10])
 #         if rules == obj.pagesDict[i][-1]:
 #             print(f"Page: {i+1}\n\n\n")
 
-
-#!!!!!!!!ERROR, RULES ARE NOT BEING JOINE DPROPERLY ANYMORE NOT SURE WY
