@@ -2,53 +2,52 @@ from PyPDF2 import PdfReader
 import os
 import re
 
-# General formats for rules, titles and headers FSG and FSUK documentation
-Rule_Start_Regex = r"^[A-Z]{1,2}\d{1,3}\.\d{1,3}"
-Title_Regex = r"^[A-Z]{1,2}\.\d{1,3}"
-Header_Regex = r"^[A-Z]{1,2}\d{1,2}\s"
-# General Formats as of 2025 for footers in FSG and FSUK documentation
-Footer_Regexes = r"©|\s+\d{4}\sRules|Formula Student Rules\s+Version:" 
-
-
-class Rule():
-    def __init__(self, rule_code, content):
-        self.rule_code = rule_code
-        self.content = content
-
-    class Title():
-        def __init__(self, rule_code, content):
-            super().__init__(rule_code, content)
-
-
 class PDF():
     def __init__(self, filename) -> None:
         self.filename = filename
+        # General formats for each attribute of rule documents as per 2025 FSG FSUK
+        self._rule_start_regex = r"^[A-Z]{1,2}\d{1,3}\.\d{1,3}"
+        self._title_regex = r"^[A-Z]{1,2}\.\d{1,3}"
+        self._footer_regex = r"©|\s+\d{4}\sRules|Formula Student Rules\s+Version:" 
+        self._header_regex = r"^[A-Z]{1,2}\d{1,2}\s"
 
         # Establishes directory the folder of the python file is in, irrelvant of it's name.
         directory = os.path.dirname(__file__)
         filepath = os.path.join(directory,filename)
-        self.pagesDict = PDF.create_page_dict(filepath)
+        self.pagesDict = self.create_page_dict(filepath)
 
-        for pageNum in self.pagesDict: #for loop which cleans every page
-            self.pagesDict[pageNum] = self.clean_page(self.pagesDict[pageNum])
-
-    def create_page_dict(filepath):
+    def create_page_dict(self, filepath) -> dict:
         pdfObj = PdfReader(filepath)
         numPages = pdfObj._get_num_pages()
         pagesDict = {}
-        for page in range(numPages): #Creates a dictionary of all the pages with 'uncleaned' rule lines
-            pageDataObj = pdfObj.pages[page]
-            pagesDict[page] = pageDataObj.extract_text().split("\n")
+        page_memory = []
+        for page_index in range(numPages): #Creates a dictionary of all the pages with 'uncleaned' rule lines and also cleans them simultaneously
+            if page_memory:
+                page = page_memory[0]
+                page_memory = []
+            else:
+                page = self.clean_page(pdfObj.pages[page_index].extract_text().split("\n"))
+            try:
+                next_page = self.clean_page(pdfObj.pages[page_index+1].extract_text().split("\n"))
+                clean_result = self.clean_between_pages(page, next_page)
+                if clean_result != 0:
+                    page, next_page = clean_result
+                    pagesDict[page_index+1] = next_page
+                page_memory.append(next_page)
+            except IndexError:
+                pass
+            pagesDict[page_index] = page
         return pagesDict
 
-    def clean_page(self, pageData): # function which cleans the rule lines one a single 
+
+    def clean_page(self, pageData: list) -> list: # function which cleans the rule lines on a page 
         cleanedPage = []
         i = 0
         while len(cleanedPage) < len(pageData):
             PageString = pageData[i]
-            for strings in range(i, len(pageData)):
+            for _ in range(i, len(pageData)):
                 # FOOTER CLEANING - Checks each word in potential footer text and uses regexes to check'
-                if re.search(Footer_Regexes, PageString):
+                if re.search(self._footer_regex, PageString):
                     PageString = ""
                     break
 
@@ -59,7 +58,7 @@ class PDF():
 
                 #RULE CLEANING
                 try:
-                    if re.search(Rule_Start_Regex,pageData[i+1].strip()): # Assumption: Follows regex format of start of a rule, if its found it means it wont join it to the string before it
+                    if re.search(self._rule_start_regex,pageData[i+1].strip()): # Assumption: Follows regex format of start of a rule, if its found it means it wont join it to the string before it
                         break
                     else:
                         PageString += pageData[i+1] #conjoins the two rules if second one is not a 'beginning'
@@ -72,35 +71,35 @@ class PDF():
         cleanedPage = list(filter(None, cleanedPage))
         return cleanedPage
 
-    def clean_between_pages(self):
-        # have to match start of a page disregarding the header and footer where the first sentence doesnt start with a rule code
-        # for loop through pages which are CLEANED, if page starts with sentence which doesnt match header, title or rule start it joins to page before it
-        pass
+ 
+    def clean_between_pages(self, page: list, next_page: list) -> list: # SLOW FUNCTION MIGHT NEED TO OPTIMISE
+        # Links rules seperated by pages which should be together.
+        regex_check = re.compile("|".join([self._rule_start_regex,self._title_regex,self._header_regex]))
+        if not re.search(regex_check, next_page[0])  and next_page[0][0].islower():
+            new_rule = page[-1] + next_page[0]
+            page[-1] = new_rule
+            new_next_page = next_page[1:]
+            return [page, new_next_page]
+        else:
+            return 0
+
 
 
  
  # PAGE NUMBER IS ONE LESS THAN TRUE PAGE MUMBER DUE TO THE WAY THE MODULE PYPDF2 WORKS - TBC IF THIS DEPENDS ON FILE!!!!
  # READS FOOTER FROM PAGE BEFORE IT SOMETIMES AS HEADER OF CURRENT PAGE
 
-# CODE ASSUMPTIONS
-# EVERY RULE BEGINS WITH GENERAL FORMAT A-Z 1-50 . (no spaces)
-# EVERY FOOTER HAS © IN IT TO IDENTIFY IT AS A FOOTER TO CLEAN AND MIGHT CONTAIN 'RULES' AS FINAL WORD
 
 # FILES AND FILE INFO
 # "rules-extraction/fsuk-2024-rules---v1-2.pdf"
 # "rules-extraction/FSG-Rules_2024_v1.1.pdf"
 # "rules-extraction/fsuk-2025-rules---v1-0.pdf"
-# Formula Student Rules 20--- on footer of both FSG and FSUK read on top or bottom depending on format of pdf
-# FSG doesnt have spaces between words when \n occurs between the two words
 
-obj = PDF("fsuk-2024-rules---v1-2.pdf") # LOOK AT OS LIBRARY TO SEARCH FOR FILE NAME AS OPPOSED TO ASSUMED DIRECTORY rules-extraction/
-# for rules in obj.pagesDict[10]:
-#     if re.search(Title_Regex, rules):
-#         print(rules)
-print(obj.pagesDict[10])
-# for i in range (15):
-#     for rules in obj.pagesDict[i]:
-#         print(rules)
-#         if rules == obj.pagesDict[i][-1]:
-#             print(f"Page: {i+1}\n\n\n")
+obj = PDF("fsuk-2024-rules---v1-2.pdf") 
 
+
+for i in range (10,21):
+    for rules in obj.pagesDict[i]:
+        print(rules)
+        if rules == obj.pagesDict[i][-1]:
+            print(f"Page: {i+1}\n\n\n")
