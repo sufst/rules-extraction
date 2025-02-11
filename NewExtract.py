@@ -82,12 +82,7 @@ class PDF():
             return [page, new_next_page]
         else:
             return 0
-    
-    def list_rules(self):
-        for key in self.pagesDict:
-            rules = {}
-            page = self.pagesDict[key]
-        pass
+
 
     def objectify_pages(self): # Also filters through to second instance of SECTION A (ignoring contents section a) and deletes everything before it as its irrelevant // IMPROVE EFFICIENCY
         obj_pagesList = []
