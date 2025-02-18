@@ -1,15 +1,16 @@
 from PyPDF2 import PdfReader
 import os
 import re
+import difflib 
 
 class PDF():
     def __init__(self, filename) -> None:
         self.filename = filename
-        # General formats for each attribute of rule documents as per 2025 FSG FSUK
-        self._rule_start_regex = r"^[A-Z]{1,2}\d{1,3}\.\d{1,3}"
-        self._title_regex = r"^[A-Z]{1,2}\.\d{1,3}"
+        # General formats for each attribute of rule documents as per 2025 FSG FSUK and FSG
+        self._rule_start_regex = r"^[A-Z]{1,2}\d{1,3}\.\d{1,3}\."
+        self._title_regex = r"^[A-Z]{1,2}\d{1,3}\.\d{1,3}\s"
         self._footer_regex = r"©|\s+\d{4}\sRules|Formula Student Rules\s+Version:" 
-        self._section_regex = r"^[A-Z]{1,2}\d{1,2}\s|SECTION [A-Z]{1,2}"
+        self._section_regex = r"^[A-Z]{1,2}\d{1,2}\s+[A-Z]|SECTION\s+[A-Z]{1,2}\s+[A-Z]|^[A-Z]{1,2}\d{1,2}\s+\["
         self.regex_check = re.compile("|".join([self._rule_start_regex,self._title_regex,self._section_regex]))
 
         # Establishes directory the folder of the python file is in, irrelvant of it's name.
@@ -88,7 +89,6 @@ class PDF():
         obj_pagesList = []
         delete_count = 0 # Counts number of times section A appears, when 2 it chops the first part of the document off as its uneccesary
         for keys in self.pagesDict:
-            print(keys)
             page = self.pagesDict[keys]
             obj_page = []
             for lines in page:
@@ -108,7 +108,7 @@ class PDF():
                     obj_page.append(self.Title(keys,id,content))
             if delete_count == 2:
                 obj_pagesList = []
-                delete_count = 0 
+                delete_count = 0
             obj_pagesList += obj_page
         return obj_pagesList
 
@@ -128,55 +128,56 @@ class PDF():
             super().__init__(page_no, id, section)
 
             
-
-def find_differences_rules(PDF1,PDF2):
+def find_differences(PDF1, PDF2):
+    # Function compares PDF2 TO PDF1 and shows difference of PDF2 compared to 1
+    # Initialise PDF Objects
     PDF1_obj = PDF(PDF1)
     PDF2_obj = PDF(PDF2)
-    Rules1 = PDF1_obj.pagesObjList
-    Rules2 = PDF2_obj.pagesObjList
-    # DATA ORGANISATION IN MATCHDICT {ID: RuleObj}
-    MatchDict1 = {}
-    MatchDict2 = {}
-    file_output = []
-    differences = []
-    # COMPARISON SYSTEM
-    for rules in Rules1:
-        MatchDict1[rules.id] = rules
-    for rules in Rules2:
-        MatchDict2[rules.id] = rules
-    for keys in MatchDict1:
-        try:
-            MatchDict2[keys]
-        except KeyError:
-            output = f"{MatchDict1[keys].id} has no corresponding rule in {PDF2}" # {MatchDict1[keys].content}
-            differences.append(output)
-    file_output += differences
+    content_1 = PDF1_obj.pagesObjList
+    content_2 = PDF2_obj.pagesObjList
+    # Data storage for matching
+    sections_1, sections_2, titles_1, titles_2, rules_1, rules_2 = [{},{},{},{},{},{}] # Will be formatted ID, Content
+
+    for lines in zip(content_1,content_2):
+        line_1 = lines[0]
+        line_2 = lines[1]
+
+        if type(line_1) == PDF.Rule:
+            rules_1[line_1.id] = line_1.content
+        elif type(line_1) == PDF.Title:
+            titles_1[line_1.id] = line_1.content
+        elif type(line_1) == PDF.Section:
+            sections_1[line_1.id] = line_1.content
+
+        if type(line_2) == PDF.Rule:
+            rules_2[line_2.id] = line_2.content
+        elif type(line_2) == PDF.Title:
+            titles_2[line_2.id] = line_2.content
+        elif type(line_2) == PDF.Section:
+            sections_2[line_2.id] = line_2.content
+        # TURN THIS DATASET INTO A LIST SET NOT DICT SO GET CLOSE MACTHES WORKS EASILY AND LINK IDS AND CONTENT FOR COMPARISON, CAN LATER CONVERT BACK INTO OBKECT IF NEEDED USE 
+        # GET CLOSE MATCHES WILL ENSURE IF A RULE FULLY DOESNT EXIST, TINKER WITH DIFFERENCE FACTOR
+    print(zip(rules_1,rules_2))
+    for checks in zip(rules_1,rules_2): # zip dict element: ((ID1, CONTENT1),(ID2, CONTENT2)), etc
+        id_1, cont_1 = checks[0][0], checks[0][1]
+        id_2, cont_2 = checks[1][0], checks[1][1]
+        
+
+        pass
+        
+
+        # Outputs for testing
+        output_1 = []
+        output_2 = []
+        file_output = "\n".join(output_1) + "\n\n" + "\n".join(output_2)
+    
+        directory = os.path.dirname(__file__)
+        filepath = os.path.join(directory,"Output_text.txt")
+        with open(filepath,"w",encoding="utf-8") as f:
+            f.write(file_output)
+    
 
 
-    # -- OUTPUT RAW TEXT BELOW
-    if len(Rules1) > len(Rules2):
-        range_length = len(Rules1) + 1
-    else:
-        range_length = len(Rules2)
-    for i in range(range_length):
-        break_status = False
-        try:
-            PDF1_rule = f"Pg {Rules1[i].page_no} {Rules1[i].id} {Rules1[i].content}"
-        except IndexError:
-            PDF1_rule = "No rule to match"
-            break_status = True
-        try:
-            PDF2_rule = f"Pg {Rules2[i].page_no} {Rules2[i].id} {Rules2[i].content}"
-        except IndexError:
-            PDF2_rule = "No rule to match"
-            break_status = True
-
-        file_output.append(f"(1) {PDF1_rule}\n(2) {PDF2_rule}\n")
-
-        if break_status:
-            with open("Output_text.txt","w",encoding="utf-8") as f:
-                f.write("\n".join(file_output))
-            break
 
  
  # PAGE NUMBER IS ONE LESS THAN TRUE PAGE MUMBER DUE TO THE WAY THE MODULE PYPDF2 WORKS - TBC IF THIS DEPENDS ON FILE!!!!
@@ -189,6 +190,6 @@ def find_differences_rules(PDF1,PDF2):
 # "rules-extraction/fsuk-2025-rules---v1-0.pdf"
 # 
 
-find_differences_rules("fsuk-2025-rules---v1-0.pdf","fsuk-2024-rules---v1-2.pdf")
+find_differences("fsuk-2025-rules---v1-0.pdf","fsuk-2024-rules---v1-2.pdf")
 
 # RULE DIFFERENCES ARE DUE TO RULE ID CODES VARYING BETWEEN DOCUMENTS BUT CONTENT BEING THE SAME GOT TO THINK AROUND THIS, MAYBE FOCUS ON MATCHING TEXT
