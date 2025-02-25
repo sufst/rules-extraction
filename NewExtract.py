@@ -7,8 +7,8 @@ class PDF():
     def __init__(self, filename) -> None:
         self.filename = filename
         # General formats for each attribute of rule documents as per 2025 FSG FSUK and FSG
-        self._rule_start_regex = r"^[A-Z]{1,2}\d{1,3}\.\d{1,3}\."
-        self._title_regex = r"^[A-Z]{1,2}\d{1,3}\.\d{1,3}\s"
+        self._rule_start_regex = r"^[A-Z]{1,2}\d{1,3}\.\d{1,3}\.\d{1,3}\s+"
+        self._title_regex = r"^[A-Z]{1,2}\d{1,3}\.\d{1,3}\s+"
         self._footer_regex = r"©|\s+\d{4}\sRules|Formula Student Rules\s+Version:" 
         self._section_regex = r"^[A-Z]{1,2}\d{1,2}\s+[A-Z]|SECTION\s+[A-Z]{1,2}\s+[A-Z]|^[A-Z]{1,2}\d{1,2}\s+\["
         self.regex_check = re.compile("|".join([self._rule_start_regex,self._title_regex,self._section_regex]))
@@ -135,47 +135,64 @@ def find_differences(PDF1, PDF2):
     PDF2_obj = PDF(PDF2)
     content_1 = PDF1_obj.pagesObjList
     content_2 = PDF2_obj.pagesObjList
+    output_1 = []
     # Data storage for matching
-    sections_1, sections_2, titles_1, titles_2, rules_1, rules_2 = [{},{},{},{},{},{}] # Will be formatted ID, Content
+    sections_1, sections_2, titles_1, titles_2, rules_1, rules_2 = [{},{},{},{},{},{}] # Will be formatted Content, ID
 
     for lines in zip(content_1,content_2):
         line_1 = lines[0]
         line_2 = lines[1]
 
         if type(line_1) == PDF.Rule:
-            rules_1[line_1.id] = line_1.content
+            rules_1[line_1.content] = line_1.id
         elif type(line_1) == PDF.Title:
-            titles_1[line_1.id] = line_1.content
+            titles_1[line_1.content] = line_1.id
         elif type(line_1) == PDF.Section:
-            sections_1[line_1.id] = line_1.content
+            sections_1[line_1.content] = line_1.id
 
         if type(line_2) == PDF.Rule:
-            rules_2[line_2.id] = line_2.content
+            rules_2[line_2.content] = line_2.id
         elif type(line_2) == PDF.Title:
-            titles_2[line_2.id] = line_2.content
+            titles_2[line_2.content] = line_2.id
         elif type(line_2) == PDF.Section:
-            sections_2[line_2.id] = line_2.content
-        # TURN THIS DATASET INTO A LIST SET NOT DICT SO GET CLOSE MACTHES WORKS EASILY AND LINK IDS AND CONTENT FOR COMPARISON, CAN LATER CONVERT BACK INTO OBKECT IF NEEDED USE 
-        # GET CLOSE MATCHES WILL ENSURE IF A RULE FULLY DOESNT EXIST, TINKER WITH DIFFERENCE FACTOR
-    print(zip(rules_1,rules_2))
-    for checks in zip(rules_1,rules_2): # zip dict element: ((ID1, CONTENT1),(ID2, CONTENT2)), etc
-        id_1, cont_1 = checks[0][0], checks[0][1]
-        id_2, cont_2 = checks[1][0], checks[1][1]
-        
+            sections_2[line_2.content] = line_2.id
 
-        pass
-        
+        # Checking layer 1 - based off of matching rule codes and checking first part match
+        # Reversing data set to prioritise matching by ID structure: ID, CONTENT
+        reverse_rules_1 = {rules_1[key]: key for key in rules_1}
+        reverse_rules_2 = {rules_2[key]: key for key in rules_2}
+        search_keys = reverse_rules_1.keys()
+    # Check if layer 1 really is working as expected!!!!
+    print(len(rules_1))
+    for keys in search_keys: # checks if rule code exists in other rule pdf and if the first raw text part matches its removed from the next stage of checking
+        if keys in reverse_rules_2:
+            if reverse_rules_1[keys].replace(" ","") == reverse_rules_2[keys].replace(" ",""): 
+                print(rules_1[reverse_rules_1[keys]])
+                print(rules_2[reverse_rules_2[keys]])
+                del rules_1[reverse_rules_1[keys]]
+                del rules_2[reverse_rules_2[keys]]       
+    print(len(rules_2))
+    for checks in zip(rules_1,rules_2): # zip dict element: ((CONTENT1, ID1),(CONTENT2, ID2)), etc
+        cont_1, id_1 = checks[0], rules_1[checks[0]]
+        cont_2, id_2 = checks[1], rules_2[checks[1]]
+        print(id_1, cont_1)
+    
+        # Checking layer 2 - rules which still 'dont match' anything are fed through here
+        rule_data = [rule for rule in rules_2 if rules_2[rule][:2] == id_1[:2]] # searches within the relevant section for that rule instead of the whole document
+        match = difflib.get_close_matches(cont_1,rule_data,1,0.7)
+        if match:
+            pass
+        else:
+            output_1.append(f"Rule removed: {id_1,cont_1}")
 
-        # Outputs for testing
-        output_1 = []
-        output_2 = []
-        file_output = "\n".join(output_1) + "\n\n" + "\n".join(output_2)
+    file_output = "\n".join(output_1)
     
-        directory = os.path.dirname(__file__)
-        filepath = os.path.join(directory,"Output_text.txt")
-        with open(filepath,"w",encoding="utf-8") as f:
-            f.write(file_output)
-    
+    directory = os.path.dirname(__file__)
+    filepath = os.path.join(directory,"Output_text.txt")
+    with open(filepath,"w",encoding="utf-8") as f:
+        f.write(file_output)
+
+
 
 
 
@@ -190,6 +207,6 @@ def find_differences(PDF1, PDF2):
 # "rules-extraction/fsuk-2025-rules---v1-0.pdf"
 # 
 
-find_differences("fsuk-2025-rules---v1-0.pdf","fsuk-2024-rules---v1-2.pdf")
+find_differences("fsuk-2024-rules---v1-2.pdf","fsuk-2025-rules---v1-0.pdf")
 
 # RULE DIFFERENCES ARE DUE TO RULE ID CODES VARYING BETWEEN DOCUMENTS BUT CONTENT BEING THE SAME GOT TO THINK AROUND THIS, MAYBE FOCUS ON MATCHING TEXT
